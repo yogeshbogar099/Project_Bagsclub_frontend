@@ -17,6 +17,9 @@ import AutomaticTopUp from './pages/associate/financial/AutomaticTopUp';
 import RateList from './pages/associate/financial/RateList';
 import AddOrder from './pages/associate/financial/AddOrder';
 import NonWovenBags from './pages/associate/financial/NonWovenBags';
+import DCutBagOrder from './pages/associate/financial/DCutBagOrder';
+import LoopBagOrder from './pages/associate/financial/LoopBagOrder';
+import BoxBagOrder from './pages/associate/financial/BoxBagOrder';
 import SearchOrder from './pages/associate/order/SearchOrder';
 import OrderStage from './pages/associate/order/OrderStage';
 import OrderHistory from './pages/associate/order/OrderHistory';
@@ -70,7 +73,10 @@ function App() {
             <Route path="add-money" element={<AddMoney />} />
             <Route path="rate-list" element={<RateList />} />
             <Route path="add-order" element={<AddOrder />} />
-            <Route path="financial/non-woven" element={<NonWovenBags />} />
+<Route path="financial/non-woven" element={<NonWovenBags />} />
+<Route path="add-order/d-cut-bag" element={<DCutBagOrder />} />
+<Route path="add-order/loop-bag" element={<LoopBagOrder />} />
+<Route path="add-order/box-bag" element={<BoxBagOrder />} />
             
             {/* Order Status */}
             <Route path="order/search-number" element={<SearchOrder />} />

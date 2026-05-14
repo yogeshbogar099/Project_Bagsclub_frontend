@@ -65,15 +65,22 @@ api.interceptors.response.use(
                 const { data } = await api.post('/auth/refresh');
                 
                 // Update local storage with new token
-                localStorage.setItem('accessToken', data.accessToken);
-                
-                // Retry original request with new token
-                originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
-                return api(originalRequest);
+                if (data.accessToken) {
+                    localStorage.setItem('accessToken', data.accessToken);
+                    // Retry original request with new token
+                    originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+                    return api(originalRequest);
+                }
             } catch (refreshError) {
                 // If refresh fails, logout user (clear storage)
                 localStorage.removeItem('accessToken');
-                // No login page to redirect to
+                
+                // Only redirect if we are not already on login/register/landing
+                if (!window.location.pathname.includes('/login') && 
+                    !window.location.pathname.includes('/signup') && 
+                    window.location.pathname !== '/') {
+                    window.location.href = '/login?expired=true';
+                }
                 return Promise.reject(refreshError);
             }
         }

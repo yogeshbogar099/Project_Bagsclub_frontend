@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import logo from "../assets/logo.png"; // Adjust path if necessary
 import AssociateNavbar from './AssociateNavbar';
+import AssociateFooter from './AssociateFooter';
 import { useAuth } from '../context/AuthContext';
 
 const AssociateLayout = () => {
@@ -71,7 +72,7 @@ const AssociateLayout = () => {
         <Outlet />
       </main>
       
-      {/* Optional: Footer could go here if needed, but requirements didn't specify one for Associate pages */}
+      <AssociateFooter />
     </div>
   );
 };

@@ -27,8 +27,15 @@ const NonWovenBags = () => {
   ];
 
   const handleCategorySelect = (category) => {
-    console.log('Selected category:', category.name);
-    // Future navigation logic can be added here
+    if (category.id === 'd-cut') {
+      navigate('/associate/add-order/d-cut-bag');
+    } else if (category.id === 'loop') {
+      navigate('/associate/add-order/loop-bag');
+    } else if (category.id === 'box') {
+      navigate('/associate/add-order/box-bag');
+    } else {
+      console.log('Selected category:', category.name);
+    }
   };
 
   return (

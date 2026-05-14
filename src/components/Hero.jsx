@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'; 
-import Carousal_one from '../assets/Carousal_one.jpeg';
+import Carousal_one from '../assets/Carousal_image_1.jpeg';
 import Carousal_two from '../assets/Carousal_two.jpeg';
  
  const Hero = () => { 

@@ -72,6 +72,16 @@ const AutomaticTopUp = () => {
 
   const handleAutoDetectPayment = async () => {
     if (isExpired || !showQr) return;
+
+    // Check if token exists before trying to verify
+    if (!localStorage.getItem('accessToken')) {
+      setIsProcessing(false);
+      setShowQr(false);
+      toast.error('Session expired. Please log in again.', { id: 'payment-status' });
+      navigate('/login?expired=true');
+      return;
+    }
+
     setIsProcessing(true);
     toast.loading('Payment detected! Verifying...', { id: 'payment-status' });
 

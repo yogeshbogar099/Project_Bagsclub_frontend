@@ -38,26 +38,31 @@ const AddOrder = () => {
     { 
       id: 'paper', 
       name: 'Paper bags', 
-      image: paperBag 
+      image: paperBag,
+      comingSoon: true
     },
     { 
       id: 'plastic', 
       name: 'Plastic bags', 
-      image: plasticBag 
+      image: plasticBag,
+      comingSoon: true
     },
     { 
       id: 'hdpe', 
       name: 'HDPE bags', 
-      image: hdpe 
+      image: hdpe,
+      comingSoon: true
     },
     { 
       id: 'canvas', 
       name: 'Canvas bags', 
-      image: canvas
+      image: canvas,
+      comingSoon: true
     },
   ];
 
   const handleProductSelect = (product) => {
+    if (product.comingSoon) return;
     if (product.id === 'non-woven') {
       navigate('/associate/financial/non-woven');
     } else {
@@ -88,22 +93,29 @@ const AddOrder = () => {
         {products.map((product) => (
           <motion.div
             key={product.id}
-            whileHover={{ y: -5, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)" }}
-            whileTap={{ scale: 0.98 }}
-            className="bg-white rounded-xl shadow-md overflow-hidden cursor-pointer border border-gray-100 flex flex-col h-full group"
+            whileHover={!product.comingSoon ? { y: -5, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)" } : {}}
+            whileTap={!product.comingSoon ? { scale: 0.98 } : {}}
+            className={`bg-white rounded-xl shadow-md overflow-hidden border flex flex-col h-full group transition-all duration-300 ${product.comingSoon ? 'cursor-not-allowed border-dashed border-gray-200 bg-gray-50/50' : 'cursor-pointer border-gray-100 hover:border-primary/20'}`}
             onClick={() => handleProductSelect(product)}
           >
             <div className="aspect-[4/3] overflow-hidden bg-gray-50 relative">
               <img 
                 src={product.image} 
                 alt={product.name} 
-                className="w-full h-full object-contain p-4 transition-transform duration-500 group-hover:scale-110"
+                className={`w-full h-full object-contain p-4 transition-all duration-500 ${!product.comingSoon ? 'group-hover:scale-110' : 'grayscale opacity-40 scale-95'}`}
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-[0.02] transition-opacity duration-300"></div>
+              {product.comingSoon && (
+                <div className="absolute top-0 right-0 z-10">
+                  <div className="bg-[#ff3d00] text-white text-[10px] font-black px-3 py-1.5 rounded-bl-xl uppercase tracking-tighter shadow-md border-l border-b border-white/20">
+                    Coming Soon
+                  </div>
+                </div>
+              )}
+              {!product.comingSoon && <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-[0.02] transition-opacity duration-300"></div>}
             </div>
             <div className="p-4 text-center flex-grow flex items-center justify-center">
-              <h3 className="font-semibold text-base text-gray-800 group-hover:text-primary transition-colors">
+              <h3 className={`font-semibold text-base transition-colors ${product.comingSoon ? 'text-gray-400' : 'text-gray-800 group-hover:text-primary'}`}>
                 {product.name}
               </h3>
             </div>
