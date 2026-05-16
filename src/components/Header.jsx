@@ -109,8 +109,8 @@ import { useAuth } from '../context/AuthContext';
                  className="h-12 md:h-16 w-auto object-contain" 
                /> 
                <div className="flex flex-col">
-                   <span className="text-xl font-bold font-heading text-[#0d47a1]">BAGSCLUB</span>
-                   <span className={`text-[10px] font-medium tracking-wider ${isSolid ? 'text-gray-600' : 'text-white/80'}`}>No.1 Bag Printing Service</span>
+                   <span className={`text-xl font-bold font-heading transition-colors duration-300 ${isSolid ? 'text-[#0d47a1]' : 'text-white'}`}>BAGSCLUB</span>
+                   <span className={`text-[10px] font-medium tracking-wider transition-colors duration-300 ${isSolid ? 'text-gray-600' : 'text-white/80'}`}>No.1 Bag Printing Service</span>
                  </div>
              </Link> 
            </div> 

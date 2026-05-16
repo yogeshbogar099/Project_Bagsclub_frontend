@@ -6,20 +6,18 @@ import {
 } from 'lucide-react';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../../context/AuthContext';
 
 // Assets
 import Loop from '../../../assets/loop.jpg';
 
 const LoopBagOrder = () => {
     const navigate = useNavigate();
+    const { updateWalletBalance } = useAuth();
     const [loading, setLoading] = useState(false);
     const [pricePerBag, setPricePerBag] = useState(5); // Placeholder base price
     const [dragActive, setDragActive] = useState(false);
     
-    // Sync Scroll Refs
-    const leftPanelRef = useRef(null);
-    const rightPanelRef = useRef(null);
-
     // Form State
     const [formData, setFormData] = useState({
         printingPress: 'Direct Order',
@@ -167,6 +165,9 @@ const LoopBagOrder = () => {
             };
             const { data } = await api.post('/orders', payload);
             if (data.success) {
+                if (data.walletBalance !== undefined) {
+                    updateWalletBalance(data.walletBalance);
+                }
                 toast.success('Order placed successfully!');
                 navigate('/associate/add-order');
             }
@@ -185,7 +186,7 @@ const LoopBagOrder = () => {
                     ADD ORDER
                 </h1>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-[60px] items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-[60px]">
                     
                     {/* LEFT PANEL */}
                     <div className="w-full space-y-8">
@@ -623,7 +624,7 @@ const LoopBagOrder = () => {
                     </div>
 
                     {/* RIGHT PANEL */}
-                    <div className="border-l-[4px] border-[#1f73ff] pl-10 space-y-10">
+                    <div className="lg:sticky lg:top-10 h-fit border-l-[4px] border-[#1f73ff] pl-10 space-y-10">
                         
                         {/* Product Image Carousel Placeholder */}
                         <div className="bg-white rounded-[20px] shadow-lg border border-gray-100 p-4 relative group">

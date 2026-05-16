@@ -61,6 +61,16 @@ import Carousal_two from '../assets/Carousal_two.jpeg';
      setTimeout(() => setIsAnimating(false), 1000); 
    }; 
  
+   // Accessibility: Keyboard Navigation
+   useEffect(() => {
+     const handleKeyDown = (e) => {
+       if (e.key === 'ArrowLeft') handlePrev();
+       if (e.key === 'ArrowRight') handleNext();
+     };
+     window.addEventListener('keydown', handleKeyDown);
+     return () => window.removeEventListener('keydown', handleKeyDown);
+   }, [currentSlide, isAnimating]);
+ 
    // Scroll to content 
    const scrollToContent = () => { 
      const content = document.getElementById('services'); 
@@ -92,14 +102,14 @@ import Carousal_two from '../assets/Carousal_two.jpeg';
            > 
              {/* Parallax Background */} 
              <div 
-               className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
+               className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[10000ms] ease-linear" 
                style={{ 
                  backgroundImage: `url(${slide.bgImage})`, 
-                 transform: 'scale(1.1)' // Slight zoom for parallax effect 
+                 transform: index === currentSlide ? 'scale(1.15)' : 'scale(1)' // Ken Burns Effect
                }} 
              > 
-               {/* Dark Overlay */} 
-               <div className="absolute inset-0 bg-black/60"></div> 
+               {/* Bright & Vibrant Overlay - adjusted for visual appeal */} 
+               <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/60"></div> 
              </div> 
  
              {/* Content Container */} 
@@ -158,6 +168,20 @@ import Carousal_two from '../assets/Carousal_two.jpeg';
          <i className="fas fa-angle-right text-3xl"></i> 
        </button> 
  
+       {/* Slide Indicators */}
+       <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-20 flex gap-3">
+         {slides.map((_, index) => (
+           <button
+             key={index}
+             onClick={() => goToSlide(index)}
+             className={`w-3 h-3 rounded-full transition-all duration-300 ${
+               index === currentSlide ? 'bg-white w-8' : 'bg-white/40 hover:bg-white/60'
+             }`}
+             aria-label={`Go to slide ${index + 1}`}
+           />
+         ))}
+       </div>
+
        {/* Scroll Down Indicator */} 
        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20"> 
          <button 

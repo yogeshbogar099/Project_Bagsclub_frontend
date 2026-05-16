@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import logo from "../assets/logo.png"; // Adjust path if necessary
 import AssociateNavbar from './AssociateNavbar';
 import AssociateFooter from './AssociateFooter';
@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 
 const AssociateLayout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
 
   const handleSignOut = async () => {
@@ -68,7 +69,7 @@ const AssociateLayout = () => {
       </header>
 
       {/* Main Content Area */}
-      <main className="container mx-auto px-4 py-8">
+      <main className={`${location.pathname === '/associate/add-order' ? 'w-full' : 'container mx-auto px-4 py-8'}`}>
         <Outlet />
       </main>
       

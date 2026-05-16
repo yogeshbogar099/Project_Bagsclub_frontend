@@ -6,40 +6,40 @@ import {
 } from 'lucide-react';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../../context/AuthContext';
 
 // Assets
 import D_cut from '../../../assets/d_Cut.jpg';
 
 const DCutBagOrder = () => {
     const navigate = useNavigate();
+    const { updateWalletBalance } = useAuth();
     const [loading, setLoading] = useState(false);
     const [pricePerBag, setPricePerBag] = useState(5); // Placeholder base price
     const [dragActive, setDragActive] = useState(false);
     
-    // Sync Scroll Refs
-    const leftPanelRef = useRef(null);
-    const rightPanelRef = useRef(null);
-
     // Form State
     const [formData, setFormData] = useState({
-        printingPress: 'Direct Order',
+        printingPress: '', // Changed to empty for "not select by default"
         orderName: '',
-        bagType: 'One side',
-        quantity: 1000,
-        bagSize: '10 X 12',
-        bagColor: 'Red',
-        textColorType: 'Single color',
-        textColorSelection: [], // Changed to array for multi-select
-        privacy: 'Not Required',
+        bagType: '', // Changed to empty
+        quantity: '', // Changed to empty
+        bagSize: '', // Changed to empty
+        bagColor: '', // Changed to empty
+        textColorType: '', // Changed to empty
+        textColorSelection: [], 
+        privacy: '', // Changed to empty
         deliveryOption: 'Dispatch By Transport',
         fileOption: 'Attach File Online',
         email: '',
-        fileName: '',
         fileUrl: '',
+        file: null, // To store actual file object
         sellingPrice: 0,
         remark: '',
-        pressline: 'Sandeep Printers'
+        pressline: ''
     });
+
+    const [errors, setErrors] = useState({});
 
     const bagSizes = ['10 X 12', '12 X 14', '14 X 16', '16 X 20'];
     const bagColors = ['Red', 'Green', 'Yellow', 'White', 'Blue', 'Black'];
@@ -55,31 +55,41 @@ const DCutBagOrder = () => {
     });
 
     useEffect(() => {
-        const base = formData.quantity * pricePerBag;
+        const qty = Number(formData.quantity) || 0;
+        const base = qty * pricePerBag;
         const privacyCharge = formData.privacy === 'Required' ? 100 : 0;
         const emailCharge = formData.fileOption === 'Send via Email' ? 100 : 0;
         
         const actualPrice = base + privacyCharge + emailCharge;
-        // Selling price is actual price
-        // Applicable price is 30% discount price
         const applicableCost = actualPrice * 0.7; 
         const gst = applicableCost * 0.18;
         const totalAmount = applicableCost + gst;
 
         setCosts({ applicableCost, gst, totalAmount });
-        
-        // Auto-update selling price to match actual price
         setFormData(prev => ({ ...prev, sellingPrice: actualPrice }));
     }, [formData.quantity, formData.privacy, formData.fileOption, pricePerBag]);
 
+    const validateField = (name, value) => {
+        let error = '';
+        if (!value || (Array.isArray(value) && value.length === 0)) {
+            error = 'This field is required';
+        } else if (name === 'quantity' && Number(value) < 1000) {
+            error = 'Minimum quantity is 1000';
+        }
+        setErrors(prev => ({ ...prev, [name]: error }));
+        return !error;
+    };
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        validateField(name, value);
+        
         if (name === 'fileOption') {
             setFormData(prev => ({
                 ...prev,
                 [name]: value,
                 ...(value === 'Send via Email'
-                    ? { fileName: '', fileUrl: '' }
+                    ? { file: null, fileUrl: '' }
                     : { email: '' })
             }));
             return;
@@ -89,54 +99,54 @@ const DCutBagOrder = () => {
 
     const handleColorSelect = (color) => {
         const type = formData.textColorType;
+        if (!type) {
+            toast.error('Please select Text Color Type first');
+            return;
+        }
+
         const currentSelection = [...formData.textColorSelection];
         const index = currentSelection.indexOf(color);
 
         if (index > -1) {
-            // Deselect color
             currentSelection.splice(index, 1);
         } else {
-            // Select color based on rules
             if (type === 'Single color') {
-                // Only one color allowed
                 setFormData(prev => ({ ...prev, textColorSelection: [color] }));
+                validateField('textColorSelection', [color]);
                 return;
             } else if (type === 'Two color') {
-                // Exactly two colors allowed
                 if (currentSelection.length < 2) {
                     currentSelection.push(color);
                 } else {
-                    toast.error('You can only select two colors for Two color type');
+                    toast.error('You can only select two colors');
                     return;
                 }
             } else {
-                // Multi color allowed
                 currentSelection.push(color);
             }
         }
         setFormData(prev => ({ ...prev, textColorSelection: currentSelection }));
+        validateField('textColorSelection', currentSelection);
     };
 
     const handleFile = (file) => {
         if (!file) return;
 
-        // Check file size (100MB)
         if (file.size > 100 * 1024 * 1024) {
             toast.error("File size exceeds 100MB limit");
             return;
         }
 
-        // Check file extension
         const allowedExtensions = ['pdf', 'cdr', 'psd', 'jpeg', 'jpg', 'png'];
         const extension = file.name.split('.').pop().toLowerCase();
         if (!allowedExtensions.includes(extension)) {
-            toast.error("Invalid file format. Please upload PDF, CDR, PSD, JPEG, or PNG");
+            toast.error("Invalid file format");
             return;
         }
 
-        // Simulate upload/store file info
-        setFormData(prev => ({ ...prev, fileName: file.name, fileUrl: file.name }));
-        toast.success(`File "${file.name}" ready for upload`);
+        setFormData(prev => ({ ...prev, file: file, fileUrl: file.name }));
+        validateField('fileUrl', file.name);
+        toast.success(`File "${file.name}" ready`);
     };
 
     const handleDrag = (e) => {
@@ -167,34 +177,62 @@ const DCutBagOrder = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Final validation check
+        const mandatoryFields = ['printingPress', 'orderName', 'bagType', 'quantity', 'bagSize', 'bagColor', 'textColorType', 'textColorSelection', 'privacy'];
+        if (formData.fileOption === 'Attach File Online') mandatoryFields.push('fileUrl');
+        
+        const newErrors = {};
+        let isValid = true;
+        mandatoryFields.forEach(field => {
+            if (!formData[field] || (Array.isArray(formData[field]) && formData[field].length === 0)) {
+                newErrors[field] = 'Required';
+                isValid = false;
+            }
+        });
+
+        if (!isValid) {
+            setErrors(newErrors);
+            toast.error('Please fill all required fields');
+            return;
+        }
+
         setLoading(true);
         try {
-            const payload = {
-                ...formData,
-                ...costs,
-                category: 'Non-Woven Bag',
-                type: 'D-Cut Bag',
-                bagCategory: 'Non-Woven Bag',
-                bagName: 'D-Cut Bag',
-                orderType: formData.bagType,
-                bagType: formData.bagType,
-                quantity: Number(formData.quantity),
-                textColors: formData.textColorSelection,
-                colorType: formData.textColorType,
-                privacy: formData.privacy === 'Required',
-                email: formData.fileOption === 'Send via Email' ? 'info@printersclub.in' : formData.email
-            };
-            const { data } = await api.post('/orders', payload);
-            if (data.success) {
+            const data = new FormData();
+            data.append('orderName', formData.orderName);
+            data.append('orderType', formData.bagType);
+            data.append('quantity', formData.quantity);
+            data.append('bagSize', formData.bagSize);
+            data.append('bagColor', formData.bagColor);
+            data.append('textColors', JSON.stringify(formData.textColorSelection));
+            data.append('colorType', formData.textColorType);
+            data.append('privacy', formData.privacy);
+            data.append('deliveryOption', formData.deliveryOption);
+            data.append('fileOption', formData.fileOption);
+            data.append('email', formData.fileOption === 'Send via Email' ? 'info@printersclub.in' : formData.email);
+            data.append('applicableCost', costs.applicableCost);
+            data.append('gst', costs.gst);
+            data.append('totalAmount', costs.totalAmount);
+            data.append('remark', formData.remark);
+            data.append('bagCategory', 'Non-Woven Bag');
+            data.append('bagName', 'D-Cut Bag');
+            
+            if (formData.file) {
+                data.append('file', formData.file);
+            }
+
+            const response = await api.post('/orders', data);
+
+            if (response.data.success) {
+                if (response.data.walletBalance !== undefined) {
+                    updateWalletBalance(response.data.walletBalance);
+                }
                 toast.success('Order placed successfully!');
                 navigate('/associate/add-order');
             }
         } catch (error) {
-            const status = error.response?.status;
-            const responseData = error.response?.data;
-            console.error('Order submission failed', { status, responseData, message: error.message });
-            const message = responseData?.message || error.message || 'Failed to place order';
-            toast.error(status ? `${message} (${status})` : message);
+            toast.error(error.response?.data?.message || 'Failed to place order');
         } finally {
             setLoading(false);
         }
@@ -208,7 +246,7 @@ const DCutBagOrder = () => {
                     ADD ORDER
                 </h1>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-[60px] items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-[60px]">
                     
                     {/* LEFT PANEL */}
                     <div className="w-full space-y-8">
@@ -230,11 +268,13 @@ const DCutBagOrder = () => {
                                 name="printingPress"
                                 value={formData.printingPress}
                                 onChange={handleInputChange}
-                                className="w-full h-[42px] border border-[#d8d8d8] rounded-[5px] px-4 text-sm outline-none bg-white"
+                                className={`w-full h-[42px] border rounded-[5px] px-4 text-sm outline-none bg-white ${errors.printingPress ? 'border-red-500' : 'border-[#d8d8d8]'}`}
                             >
-                                <option>Direct Order</option>
-                                <option>Sandeep Printers</option>
+                                <option value="">Select Printing Press...</option>
+                                <option value="Direct Order">Direct Order</option>
+                                <option value="Sandeep Printers">Sandeep Printers</option>
                             </select>
+                            {errors.printingPress && <p className="text-red-500 text-xs mt-1">{errors.printingPress}</p>}
                         </div>
 
                         {/* Order Name */}
@@ -246,8 +286,9 @@ const DCutBagOrder = () => {
                                 placeholder="Type customer name here to check order status easily"
                                 value={formData.orderName}
                                 onChange={handleInputChange}
-                                className="w-full h-[45px] border border-[#d8d8d8] rounded-[5px] px-4 text-sm outline-none focus:border-[#1f73ff] bg-white"
+                                className={`w-full h-[45px] border rounded-[5px] px-4 text-sm outline-none focus:border-[#1f73ff] bg-white ${errors.orderName ? 'border-red-500' : 'border-[#d8d8d8]'}`}
                             />
+                            {errors.orderName && <p className="text-red-500 text-xs mt-1">{errors.orderName}</p>}
                         </div>
 
                         {/* Select Detail Card */}
@@ -262,15 +303,19 @@ const DCutBagOrder = () => {
                                     <ShoppingBag size={18} className="text-[#1f73ff]" />
                                     Bag Type
                                 </div>
-                                <select 
-                                    name="bagType"
-                                    value={formData.bagType}
-                                    onChange={handleInputChange}
-                                    className="flex-1 h-[40px] border border-[#d8d8d8] rounded-[5px] px-3 text-sm outline-none bg-white"
-                                >
-                                    <option value="One side">One side</option>
-                                    <option value="Both sides">Both sides</option>
-                                </select>
+                                <div className="flex-1">
+                                    <select 
+                                        name="bagType"
+                                        value={formData.bagType}
+                                        onChange={handleInputChange}
+                                        className={`w-full h-[40px] border rounded-[5px] px-3 text-sm outline-none bg-white ${errors.bagType ? 'border-red-500' : 'border-[#d8d8d8]'}`}
+                                    >
+                                        <option value="">Select Bag Type...</option>
+                                        <option value="One side">One side</option>
+                                        <option value="Both sides">Both sides</option>
+                                    </select>
+                                    {errors.bagType && <p className="text-red-500 text-xs mt-1">{errors.bagType}</p>}
+                                </div>
                             </div>
 
                             {/* Quantity Row */}
@@ -280,14 +325,17 @@ const DCutBagOrder = () => {
                                     Quantity
                                 </div>
                                 <div className="flex items-center gap-4 flex-1">
-                                    <input 
-                                        type="number"
-                                        name="quantity"
-                                        value={formData.quantity}
-                                        onChange={handleInputChange}
-                                        min="1000"
-                                        className="w-[100px] h-[40px] border border-[#d8d8d8] rounded-[5px] px-3 text-center outline-none focus:border-[#1f73ff]"
-                                    />
+                                    <div className="flex flex-col flex-1">
+                                        <input 
+                                            type="number"
+                                            name="quantity"
+                                            value={formData.quantity}
+                                            onChange={handleInputChange}
+                                            min="1000"
+                                            className={`w-[100px] h-[40px] border rounded-[5px] px-3 text-center outline-none focus:border-[#1f73ff] ${errors.quantity ? 'border-red-500' : 'border-[#d8d8d8]'}`}
+                                        />
+                                        {errors.quantity && <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>}
+                                    </div>
                                     <span className="text-[#5f8dff] text-[13px]">(Min Qty. : 1000)</span>
                                 </div>
                             </div>
@@ -298,16 +346,20 @@ const DCutBagOrder = () => {
                                     <Ruler size={18} className="text-[#1f73ff]" />
                                     Bag Size
                                 </div>
-                                <select 
-                                    name="bagSize"
-                                    value={formData.bagSize}
-                                    onChange={handleInputChange}
-                                    className="flex-1 h-[40px] border border-[#d8d8d8] rounded-[5px] px-3 text-sm outline-none bg-white"
-                                >
-                                    {bagSizes.map(size => (
-                                        <option key={size} value={size}>{size}</option>
-                                    ))}
-                                </select>
+                                <div className="flex-1">
+                                    <select 
+                                        name="bagSize"
+                                        value={formData.bagSize}
+                                        onChange={handleInputChange}
+                                        className={`w-full h-[40px] border rounded-[5px] px-3 text-sm outline-none bg-white ${errors.bagSize ? 'border-red-500' : 'border-[#d8d8d8]'}`}
+                                    >
+                                        <option value="">Select Bag Size...</option>
+                                        {bagSizes.map(size => (
+                                            <option key={size} value={size}>{size}</option>
+                                        ))}
+                                    </select>
+                                    {errors.bagSize && <p className="text-red-500 text-xs mt-1">{errors.bagSize}</p>}
+                                </div>
                             </div>
 
                             {/* Bag Color Row */}
@@ -316,16 +368,20 @@ const DCutBagOrder = () => {
                                     <Palette size={18} className="text-[#1f73ff]" />
                                     Bag Color
                                 </div>
-                                <select 
-                                    name="bagColor"
-                                    value={formData.bagColor}
-                                    onChange={handleInputChange}
-                                    className="flex-1 h-[40px] border border-[#d8d8d8] rounded-[5px] px-3 text-sm outline-none bg-white"
-                                >
-                                    {bagColors.map(color => (
-                                        <option key={color} value={color}>{color}</option>
-                                    ))}
-                                </select>
+                                <div className="flex-1">
+                                    <select 
+                                        name="bagColor"
+                                        value={formData.bagColor}
+                                        onChange={handleInputChange}
+                                        className={`w-full h-[40px] border rounded-[5px] px-3 text-sm outline-none bg-white ${errors.bagColor ? 'border-red-500' : 'border-[#d8d8d8]'}`}
+                                    >
+                                        <option value="">Select Bag Color...</option>
+                                        {bagColors.map(color => (
+                                            <option key={color} value={color}>{color}</option>
+                                        ))}
+                                    </select>
+                                    {errors.bagColor && <p className="text-red-500 text-xs mt-1">{errors.bagColor}</p>}
+                                </div>
                             </div>
 
                             {/* Text Color Type Row */}
@@ -334,19 +390,23 @@ const DCutBagOrder = () => {
                                     <Palette size={18} className="text-[#1f73ff]" />
                                     Text Color Type
                                 </div>
-                                <select 
-                                    name="textColorType"
-                                    value={formData.textColorType}
-                                    onChange={(e) => {
-                                        handleInputChange(e);
-                                        setFormData(prev => ({ ...prev, textColorSelection: [] }));
-                                    }}
-                                    className="flex-1 h-[40px] border border-[#d8d8d8] rounded-[5px] px-3 text-sm outline-none bg-white"
-                                >
-                                    {textColorTypes.map(type => (
-                                        <option key={type} value={type}>{type}</option>
-                                    ))}
-                                </select>
+                                <div className="flex-1">
+                                    <select 
+                                        name="textColorType"
+                                        value={formData.textColorType}
+                                        onChange={(e) => {
+                                            handleInputChange(e);
+                                            setFormData(prev => ({ ...prev, textColorSelection: [] }));
+                                        }}
+                                        className={`w-full h-[40px] border rounded-[5px] px-3 text-sm outline-none bg-white ${errors.textColorType ? 'border-red-500' : 'border-[#d8d8d8]'}`}
+                                    >
+                                        <option value="">Select Text Color Type...</option>
+                                        {textColorTypes.map(type => (
+                                            <option key={type} value={type}>{type}</option>
+                                        ))}
+                                    </select>
+                                    {errors.textColorType && <p className="text-red-500 text-xs mt-1">{errors.textColorType}</p>}
+                                </div>
                             </div>
 
                             {/* Text Color Selection Row */}
@@ -356,7 +416,7 @@ const DCutBagOrder = () => {
                                     Text Color Selection
                                 </div>
                                 <div className="flex-1">
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className={`flex flex-wrap gap-2 p-2 border rounded-lg ${errors.textColorSelection ? 'border-red-500' : 'border-transparent'}`}>
                                         {textColorOptions.map(color => (
                                             <button
                                                 key={color}
@@ -372,6 +432,7 @@ const DCutBagOrder = () => {
                                             </button>
                                         ))}
                                     </div>
+                                    {errors.textColorSelection && <p className="text-red-500 text-xs mt-1">{errors.textColorSelection}</p>}
                                     <div className="mt-2 text-[11px] font-bold text-gray-400">
                                         {formData.textColorType === 'Single color' && "Select any one color"}
                                         {formData.textColorType === 'Two color' && "Select any two colors"}
@@ -381,7 +442,7 @@ const DCutBagOrder = () => {
                             </div>
 
                             {/* Privacy Packing Section */}
-                            <div className="p-4 border-b border-[#ededed]">
+                            <div className={`p-4 border-b border-[#ededed] ${errors.privacy ? 'bg-red-50' : ''}`}>
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="text-[15px] font-bold text-[#12286e]">PRIVACY PACKING</div>
                                     {formData.privacy === 'Required' && (
@@ -416,6 +477,7 @@ const DCutBagOrder = () => {
                                         Not Required
                                     </label>
                                 </div>
+                                {errors.privacy && <p className="text-red-500 text-xs mt-1">{errors.privacy}</p>}
                             </div>
 
                             {/* Delivery Option Section */}
@@ -486,7 +548,7 @@ const DCutBagOrder = () => {
                                         </div>
 
                                         {/* Select File Option */}
-                                        <div className="flex items-center justify-between p-4 border border-[#ededed] rounded-xl bg-white shadow-sm">
+                                        <div className={`flex items-center justify-between p-4 border rounded-xl bg-white shadow-sm ${errors.fileUrl ? 'border-red-500 bg-red-50' : 'border-[#ededed]'}`}>
                                             <div className="flex items-center gap-3 font-semibold text-gray-700">
                                                 <FileText size={18} className="text-[#1f73ff]" />
                                                 Select File
@@ -495,7 +557,7 @@ const DCutBagOrder = () => {
                                                 {formData.fileUrl && (
                                                     <span className="text-[12px] font-medium text-emerald-600 flex items-center gap-1">
                                                         <CheckCircle size={14} />
-                                                        {formData.fileName || formData.fileUrl}
+                                                        {formData.fileUrl}
                                                     </span>
                                                 )}
                                                 <button 
@@ -507,11 +569,12 @@ const DCutBagOrder = () => {
                                                 </button>
                                             </div>
                                         </div>
+                                        {errors.fileUrl && <p className="text-red-500 text-xs mt-1">{errors.fileUrl}</p>}
 
                                         {/* Drag & Drop Area */}
                                         <div 
                                             className={`relative border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer group
-                                                ${dragActive ? 'border-[#1f73ff] bg-blue-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+                                                ${dragActive ? 'border-[#1f73ff] bg-blue-50' : errors.fileUrl ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
                                             onDragEnter={handleDrag}
                                             onDragLeave={handleDrag}
                                             onDragOver={handleDrag}
@@ -646,7 +709,7 @@ const DCutBagOrder = () => {
                     </div>
 
                     {/* RIGHT PANEL */}
-                    <div className="border-l-[4px] border-[#1f73ff] pl-10 space-y-10">
+                    <div className="lg:sticky lg:top-10 h-fit border-l-[4px] border-[#1f73ff] pl-10 space-y-10">
                         
                         {/* Product Image Carousel Placeholder */}
                         <div className="bg-white rounded-[20px] shadow-lg border border-gray-100 p-4 relative group">
