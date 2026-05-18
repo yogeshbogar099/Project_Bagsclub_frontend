@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Loader2, Eye, AlertCircle, Package, Calendar, User, Info } from 'lucide-react';
+import { Search, Loader2, Eye, AlertCircle, Mail } from 'lucide-react';
 import api from '../../../utils/api';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -42,138 +42,109 @@ const SearchOrder = () => {
     performSearch(orderId);
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Printing': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Packaging': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Dispatched': return 'bg-green-100 text-green-800 border-green-200';
-      case 'Completed': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-orange-100 text-orange-800 border-orange-200';
-    }
-  };
-
   return (
     <div className="container mx-auto px-4 py-12 max-w-7xl">
       {/* Page Title */}
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-black text-[#12286e] uppercase tracking-wider mb-2">Order Tracking</h1>
-        <p className="text-gray-500 font-medium tracking-wide">Search and track your order status in real-time</p>
+        <h2 className="text-[32px] font-bold text-[#1e40af] uppercase tracking-wider mb-2">RECENT ORDERS</h2>
       </div>
 
       {/* Search Input Section */}
-      <div className="max-w-2xl mx-auto mb-16">
-        <div className="bg-white p-2 rounded-[24px] shadow-[0_15px_40px_rgba(0,0,0,0.06)] border border-gray-100">
+      <div className="max-w-2xl mx-auto mb-10">
+        <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-200">
           <form onSubmit={handleSearch} className="flex items-center">
             <div className="flex-1 relative">
-              <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400">
-                <Search size={22} />
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                <Search size={20} />
               </div>
               <input 
                 type="text" 
                 value={orderId}
                 onChange={(e) => setOrderId(e.target.value)}
-                placeholder="Enter your Order Number (e.g. ORD-12345)" 
-                className="w-full pl-14 pr-6 py-5 bg-transparent text-lg font-bold text-[#12286e] placeholder:text-gray-300 focus:outline-none transition-all"
+                placeholder="Search Order Number..." 
+                className="w-full pl-12 pr-4 py-3 bg-transparent text-base font-semibold text-gray-700 focus:outline-none"
               />
             </div>
             <button 
               type="submit"
               disabled={loading}
-              className="bg-[#1f73ff] hover:bg-blue-700 text-white px-10 py-5 rounded-[18px] font-black uppercase tracking-widest text-sm transition-all shadow-lg shadow-blue-200 disabled:bg-gray-200 active:scale-95 flex items-center gap-2"
+              className="bg-[#1f73ff] hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold uppercase tracking-widest text-xs transition-all disabled:bg-gray-200"
             >
-              {loading ? <Loader2 size={20} className="animate-spin" /> : 'Search'}
+              {loading ? <Loader2 size={18} className="animate-spin" /> : 'Search'}
             </button>
           </form>
         </div>
       </div>
 
       {/* Results Section */}
-      <div className="w-full">
+      <div className="w-full overflow-hidden">
         {error && (
-          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[32px] shadow-sm border border-red-50 max-w-2xl mx-auto animate-in fade-in zoom-in duration-300">
-            <div className="bg-red-50 p-6 rounded-full mb-6">
-              <AlertCircle size={48} className="text-red-500" />
-            </div>
-            <p className="text-[#12286e] text-2xl font-black mb-2">{error}</p>
-            <p className="text-gray-400 font-medium">Please verify the Order ID and try again.</p>
+          <div className="flex flex-col items-center justify-center py-10 bg-white rounded-xl shadow-sm border border-gray-100 max-w-2xl mx-auto">
+            <AlertCircle size={40} className="text-red-400 mb-4" />
+            <p className="text-gray-600 text-lg font-bold">{error}</p>
           </div>
         )}
 
         {order && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-white rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.05)] border border-gray-100 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50/50 border-b border-gray-100">
-                      <th className="px-8 py-6 text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Order Details</th>
-                      <th className="px-8 py-6 text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Order Date</th>
-                      <th className="px-8 py-6 text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Category</th>
-                      <th className="px-8 py-6 text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Status</th>
-                      <th className="px-8 py-6 text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    <tr className="hover:bg-gray-50/30 transition-colors">
-                      <td className="px-8 py-8">
-                        <div className="flex items-start gap-4">
-                          <div className="bg-blue-50 p-3 rounded-2xl text-[#1f73ff]">
-                            <Package size={24} />
-                          </div>
-                          <div>
-                            <span className="block font-black text-[#12286e] text-lg mb-1">
-                              #{order.orderId}
-                            </span>
-                            <span className="text-gray-400 font-bold text-sm">
-                              {order.orderName || 'Guest Order'}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-8">
-                        <div className="flex items-center gap-2 text-gray-600 font-bold">
-                          <Calendar size={16} className="text-gray-400" />
-                          {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'long',
-                            year: 'numeric'
-                          })}
-                        </div>
-                      </td>
-                      <td className="px-8 py-8">
-                        <div className="space-y-1">
-                          <span className="block text-[#12286e] font-black">{order.bagCategory}</span>
-                          <span className="block text-xs text-gray-400 font-bold uppercase tracking-wider">{order.bagName}</span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-8 text-center">
-                        <span className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusColor(order.status)}`}>
-                          <div className={`w-1.5 h-1.5 rounded-full ${order.status === 'Dispatched' ? 'bg-green-500' : 'bg-current'} animate-pulse`}></div>
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="px-8 py-8 text-center">
-                        <button 
-                          onClick={() => navigate(`/associate/order/detail/${order._id}`)}
-                          className="inline-flex items-center gap-2 px-8 py-3 bg-[#12286e] text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-black hover:shadow-xl hover:shadow-blue-900/10 transition-all active:scale-95 group"
-                        >
-                          <Eye size={16} className="group-hover:scale-110 transition-transform" />
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            
-            {/* Quick Info Tip */}
-            <div className="mt-8 flex items-center justify-center gap-3 text-gray-400 text-sm font-medium">
-              <div className="bg-gray-100 p-1.5 rounded-full">
-                <Info size={14} />
-              </div>
-              Tip: Click "View Details" to see the production log and download attached assets.
-            </div>
+          <div className="border border-gray-300 shadow-lg bg-white overflow-x-auto">
+            <table className="w-full text-center border-collapse">
+              <thead>
+                <tr className="bg-black text-white">
+                  <th className="px-4 py-4 text-xs font-bold uppercase tracking-wider border-r border-gray-700">ORDER NO.</th>
+                  <th className="px-4 py-4 text-xs font-bold uppercase tracking-wider border-r border-gray-700">DATE</th>
+                  <th className="px-4 py-4 text-xs font-bold uppercase tracking-wider border-r border-gray-700">ORDER NAME</th>
+                  <th className="px-4 py-4 text-xs font-bold uppercase tracking-wider border-r border-gray-700">ORDER DETAIL</th>
+                  <th className="px-4 py-4 text-xs font-bold uppercase tracking-wider border-r border-gray-700">CURRENT STATUS</th>
+                  <th className="px-2 py-4 border-r border-gray-700"></th>
+                  <th className="px-4 py-4 text-xs font-bold uppercase tracking-wider"></th>
+                </tr>
+              </thead>
+              <tbody className="text-sm text-gray-800">
+                <tr className="hover:bg-gray-50 border-b border-gray-200">
+                  <td className="px-4 py-5 border-r border-gray-200 font-medium">
+                    {order.orderId}
+                  </td>
+                  <td className="px-4 py-5 border-r border-gray-200">
+                    {new Date(order.createdAt).toLocaleString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true
+                    }).replace(',', '')}
+                  </td>
+                  <td className="px-4 py-5 border-r border-gray-200">
+                    {order.orderName || 'ok'}
+                  </td>
+                  <td className="px-4 py-5 border-r border-gray-200">
+                    <div className="max-w-[300px] mx-auto truncate">
+                      {order.bagName}, {order.orderType}, {order.quantity}
+                    </div>
+                  </td>
+                  <td className="px-4 py-5 border-r border-gray-200 font-medium">
+                    {order.status}
+                  </td>
+                  <td className="px-2 py-5 border-r border-gray-200 text-center">
+                    <div className="flex justify-center">
+                      <img 
+                        src="https://upload.wikimedia.org/wikipedia/commons/7/7e/Gmail_icon_%282020%29.svg" 
+                        alt="Gmail" 
+                        className="w-6 h-6 opacity-80"
+                      />
+                    </div>
+                  </td>
+                  <td className="px-4 py-5 text-center">
+                    <button 
+                      onClick={() => navigate(`/associate/order/detail/${order._id}`)}
+                      className="px-5 py-1.5 bg-[#28a745] text-white rounded-md text-[13px] font-bold italic hover:bg-green-700 transition-all shadow-sm flex items-center justify-center gap-1 mx-auto"
+                    >
+                      Details
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         )}
       </div>

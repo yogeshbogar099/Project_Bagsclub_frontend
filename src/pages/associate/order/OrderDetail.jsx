@@ -188,7 +188,10 @@ const OrderDetail = () => {
 
           {/* Action Buttons */}
           <div className="mt-16 flex flex-wrap justify-end gap-4">
-            <button className="flex items-center gap-3 px-8 py-3.5 bg-indigo-500 text-white font-black text-sm rounded-2xl hover:bg-indigo-600 hover:shadow-xl hover:shadow-indigo-200 transition-all active:scale-95 uppercase tracking-widest">
+            <button 
+              onClick={() => navigate(`/associate/order/tracking/${id}`)}
+              className="flex items-center gap-3 px-8 py-3.5 bg-indigo-500 text-white font-black text-sm rounded-2xl hover:bg-indigo-600 hover:shadow-xl hover:shadow-indigo-200 transition-all active:scale-95 uppercase tracking-widest"
+            >
               <History size={18} />
               Production Log
             </button>

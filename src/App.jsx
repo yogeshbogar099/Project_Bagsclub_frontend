@@ -24,6 +24,7 @@ import SearchOrder from './pages/associate/order/SearchOrder';
 import OrderStage from './pages/associate/order/OrderStage';
 import OrderHistory from './pages/associate/order/OrderHistory';
 import OrderDetail from './pages/associate/order/OrderDetail';
+import ProductionLog from './pages/associate/order/ProductionLog';
 import Sales from './pages/associate/reports/Sales';
 import Notes from './pages/associate/reports/Notes';
 import Transactions from './pages/associate/reports/Transactions';
@@ -83,6 +84,7 @@ function App() {
             <Route path="order/search-stage" element={<OrderStage />} />
             <Route path="order/search-date" element={<OrderHistory />} />
             <Route path="order/detail/:id" element={<OrderDetail />} />
+            <Route path="order/tracking/:id" element={<ProductionLog />} />
             
             {/* Reports */}
             <Route path="reports/sales" element={<Sales />} />
